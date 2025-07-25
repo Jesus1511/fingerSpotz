@@ -9,13 +9,20 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.jesus3.fingerspotz"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDRAp7QZDTBKBxzY0ZpE4ksrGtuQ6fEjdU"
+        }
+      },
+      "package": "com.jesus3.fingerspotz",
       "edgeToEdgeEnabled": true
     },
     "web": {
@@ -37,6 +44,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "8119c45a-d471-4157-a157-75b75234f602"
+      }
+    },
+    "owner": "jesus3"
   }
 }

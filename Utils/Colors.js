@@ -4,7 +4,7 @@ function useColors () {
 
     const isDark = useColorScheme() == "dark"
 
-    const mainGreen = isDark ? "#424d85" : "#7589f0"
+    const mainGreen = "#B4D71A"
 
     const errorRed = isDark ? "hsla(0, 100%, 62%, 0.702)" : "hsla(0, 100%, 50%, 0.42)"
 
@@ -18,7 +18,7 @@ function useColors () {
 
     const label = isDark ? "#dddddd" : "#0000007e"
 
-    const background = isDark ? "#282828" : "#ffffff"
+    const background = isDark ? "#272F29" : "#ffffff"
 
     const background2 = isDark ? "#202020" : "#ffffff"
 
@@ -27,8 +27,7 @@ function useColors () {
     const ligthBackground = isDark ? "#2a2b2a" : "#ffffff"
 
     return {
-        mainBlue,
-        yellow,
+        mainGreen,
         background2,
         ligthBackground,
         placeholder,
