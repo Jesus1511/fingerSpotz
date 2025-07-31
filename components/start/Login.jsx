@@ -1,7 +1,7 @@
 import { useNavigation } from '@react-navigation/native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Dimensions, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
-import { useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { signInWithEmailAndPassword, updateProfile } from 'firebase/auth'
 import { auth } from '../../Firebase/init' // asegúrate que esta ruta sea correcta
 import Toast from 'react-native-toast-message'
@@ -9,6 +9,7 @@ import useColors from '../../Utils/Colors'
 
 const { width, height } = Dimensions.get('window')
 import image from '../../assets/images/createAccount.webp'
+import { NavigationContext } from '../../Utils/NavBar'
 
 const Login = () => {
   const navigation = useNavigation();
@@ -17,6 +18,8 @@ const Login = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const { user, setRoute } = useContext(NavigationContext)
 
   const handleLogin = async () => {
     if (email === '' || password === '') {
@@ -39,6 +42,7 @@ const Login = () => {
       });
 
       navigation.navigate('Mapa');
+      setRoute('Mapa')
     } catch (error) {
       console.error('Error al iniciar sesión:', error.message);
       Toast.show({
@@ -49,6 +53,7 @@ const Login = () => {
       });
     }
   };
+  
 
   return (
     <View style={{ backgroundColor: Colors.background, flex: 1, paddingHorizontal: 15, paddingVertical: 25, alignItems: "center" }}>
@@ -64,11 +69,7 @@ const Login = () => {
       </View>
       <View style={{ width: "100%", height: 100, alignItems: "center" }}>
         <View>
-          <Text style={{
-            color: Colors.text, backgroundColor: Colors.background, padding: 5,
-            position: "relative", top: 15, fontSize: 16, fontWeight: "medium",
-            left: 15, zIndex: 10, width: 60, textAlign: "center"
-          }}>Email</Text>
+          <Text style={[styles.label, {width:70}]}>Email</Text>
           <TextInput
             placeholder='pedro@gmail.com'
             style={styles.input}
@@ -79,11 +80,7 @@ const Login = () => {
         </View>
 
         <View>
-          <Text style={{
-            color: Colors.text, backgroundColor: Colors.background, padding: 5,
-            position: "relative", top: 15, fontSize: 16, fontWeight: "medium",
-            left: 15, zIndex: 10, width: 100, textAlign: "center"
-          }}>Contraseña</Text>
+          <Text style={styles.label}>Contraseña</Text>
           <TextInput
             secureTextEntry={true}
             placeholder='password'
@@ -182,11 +179,11 @@ const DynamicStyles = (Colors) => StyleSheet.create({
       fontSize: 28,
       textAlign: 'center',
   },
-    buttonCreateAccount: {
-      color: Colors.text,
-      fontSize: 20,
-      fontWeight:'bold',
-      textAlign: 'center',
+  buttonCreateAccount: {
+    color: Colors.text,
+    fontSize: 20,
+    fontWeight:'bold',
+    textAlign: 'center',
   },
   gradient: {
         width: '100%',
@@ -207,6 +204,11 @@ const DynamicStyles = (Colors) => StyleSheet.create({
     paddingHorizontal:20,
     color:Colors.text,
     fontSize:20
+  },
+  label: {
+    color: Colors.text, backgroundColor: Colors.background, padding: 5,
+    position: "relative", top: 15, fontSize: 16, fontWeight: "medium",
+    left: 15, zIndex: 10, width: 100, textAlign: "center"
   }
 
 })

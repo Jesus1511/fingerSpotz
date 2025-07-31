@@ -4,18 +4,21 @@ import { Dimensions, Image, StyleSheet, Text, TextInput, TouchableOpacity, View 
 import useColors from '../../Utils/Colors'
 import { auth } from '../../Firebase/init'
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
-import { useState } from 'react'
+import { useContext, useState } from 'react'
 
 const { width, height } = Dimensions.get('window')
 
 import image from '../../assets/images/createAccount.webp'
 import Toast from 'react-native-toast-message'
+import { NavigationContext } from '../../Utils/NavBar'
 
 const CreateAccount = () => {
 
   const navigation = useNavigation();
   const Colors = useColors()
   const styles = DynamicStyles(Colors)
+
+  const { setRoute } = useContext(NavigationContext)
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -46,6 +49,7 @@ const handleRegister = async () => {
       type: "success"
     });
 
+    setRoute('Mapa')
     navigation.navigate('Mapa');
 
   } catch (error) {

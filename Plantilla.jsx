@@ -2,12 +2,22 @@ import { StyleSheet, View, TouchableOpacity } from 'react-native'
 import useColors from '../../Utils/Colors'
 import { useNavigation } from '@react-navigation/native'
 import { AntDesign } from '@expo/vector-icons'
+import { useAndroidBackHandler } from '../../Utils/useAndroidCustomBackHandler'
+import { useContext } from 'react'
+import { NavigationContext } from '../../Utils/NavBar'
 
 const P = () => {
 
   const navigation = useNavigation()
   const Colors = useColors()
   const styles = DynamicStyles(Colors)
+  const {setRoute} = useContext(NavigationContext)
+
+  useAndroidBackHandler(() => {
+    navigation.navigate('Mapa')
+    setRoute('Mapa')
+    return true
+  })
 
   return (
     <View style={{backgroundColor:Colors.background, flex:1, paddingHorizontal:15, paddingVertical:25, alignItems:"center"}}>

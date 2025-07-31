@@ -1,9 +1,9 @@
-import { StyleSheet, View, TouchableOpacity, Dimensions, Text } from 'react-native'
-import useColors from '../Utils/Colors'
+import { Entypo, FontAwesome, Fontisto } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
-import { Entypo, Fontisto, FontAwesome } from '@expo/vector-icons'
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
+import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { AppContext } from '../AppContext'
+import useColors from '../Utils/Colors'
 
 const { width, height } = Dimensions.get('window')
 
@@ -17,33 +17,39 @@ const NavBar = ({ children }) => {
   const Colors = useColors()
   const styles = DynamicStyles(Colors)
 
-  const [route, setRoute] = useState(user ? "Mapa" : firtsTime ? "OnboardingPage1" : "Login") // default route, adjust as needed
+  const [route, setRoute] = useState() // default route, adjust as needed
 
-  
+  useEffect(() => {
+    setRoute(user ? "Mapa" : firtsTime ? "OnboardingPage1" : "Login");
+  }, [])
 
-  if (route !== 'Home' && route !== 'Mapa')  {
-    return children
+  if (route !== 'Home' && route !== 'Mapa' && route !== 'Perfil' && route !== 'Spotz')  {
+    return (
+      <NavigationContext.Provider value={{setRoute}}>
+        {children}
+      </NavigationContext.Provider>
+    )
   }
 
   return (
     <NavigationContext.Provider value={{ setRoute }}>
       {children}
       <View style={styles.navbar}>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => { setRoute('Spotz'); navigation.navigate("Spotz")}}>
           <View style={[styles.iconContainer, {backgroundColor:route == 'Spotz' ? Colors.mainGreen:'transparent'}]}>
             <Fontisto name="world-o" size={40} color={Colors.text} />
           </View>
           <Text style={styles.iconText}>Spotz</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => { setRoute('Mapa'); navigation.navigate("Mapa") }}>
           <View style={[styles.iconContainer, {backgroundColor:route == 'Mapa' ? Colors.mainGreen:'transparent'}]}>
             <Entypo name="location-pin" size={45} color={Colors.text} />
           </View>
           <Text style={styles.iconText}>Mapa</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => { setRoute('Perfil'); navigation.navigate("Perfil") }}>
           <View style={[styles.iconContainer, {backgroundColor:route == 'Perfil' ? Colors.mainGreen:'transparent'}]}>
             <FontAwesome name="user-circle-o" size={40} color={Colors.text} />
           </View>
@@ -64,13 +70,15 @@ const DynamicStyles = (Colors) =>
       justifyContent:'center',
       alignItems:"center",
       marginBottom:5,
-      borderRadius:15
+      borderRadius:15,
+      overflow: 'hidden',
     },
     navbar: {
       height: height * 0.125,
       width,
       zIndex:10,
       backgroundColor: Colors.background,
+      paddingBottom:10,
       justifyContent: 'center',
       alignItems: 'center',
       flexDirection:"row",

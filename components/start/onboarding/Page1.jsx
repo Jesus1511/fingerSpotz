@@ -4,7 +4,7 @@ import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'rea
 
 const { height, width } = Dimensions.get('window');
 
-import page1Image from '../../../assets/images/page1.webp';
+import page1Image from '../../../assets/images/page1.jpeg';
 import useColors from '../../../Utils/Colors';
 
 const Page1 = () => {

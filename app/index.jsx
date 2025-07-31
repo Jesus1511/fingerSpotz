@@ -5,10 +5,14 @@ import Toast from 'react-native-toast-message'
 
 const index = () => {
   return (
+    <>
     <AppContext>
       <Navigation />
-      <Toast />
     </AppContext>
+    <Toast style={{ zIndex: 9999 }}/>
+    </>
+
+
   )
 }
 

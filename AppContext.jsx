@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import loadFonts from './Utils/Fonts';
 
 import icon from './assets/images/icon.png'
+import { useNavigation } from '@react-navigation/native';
 
 export const AppContext = createContext();
 
@@ -14,6 +15,9 @@ const ApppContext = ({children}) => {
     const [user, setUser] = useState(null);
     const [firtsTime, setFirtsTime] = useState(true);
     const [loading, setLoading] = useState(true);
+    const [mySpotz, setMySpotz] = useState(null)
+
+    const navigation = useNavigation()
 
     const initializeFonts = async () => {
         try {
@@ -40,7 +44,7 @@ const ApppContext = ({children}) => {
     useEffect(() => {
         const initizalizeApp = async () => {
             try {
-                onAuthStateChanged(auth, (user) => {
+                await onAuthStateChanged(auth, (user) => {
                     if (user) {
                         setUser(user);
                     } else {
@@ -59,6 +63,7 @@ const ApppContext = ({children}) => {
         }; initizalizeApp()
     }, []);
 
+
     if (loading) {
         return (
             <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
@@ -67,8 +72,11 @@ const ApppContext = ({children}) => {
         );
     }
 
+    console.log(user)
+    const initialRoute = user ? "Mapa" : firtsTime ? "OnboardingPage1" : "Login";
+
     return (
-      <AppContext.Provider value={{user, setUser, firtsTime, setFirtsTime}}>
+      <AppContext.Provider value={{user, setUser, firtsTime, setFirtsTime, initialRoute, mySpotz, setMySpotz}}>
         {children}
       </AppContext.Provider>
     )
