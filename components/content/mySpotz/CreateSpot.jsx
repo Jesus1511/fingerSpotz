@@ -1,113 +1,187 @@
 import { AntDesign } from '@expo/vector-icons'
+import auth from '@react-native-firebase/auth'
+import firestore from '@react-native-firebase/firestore'
+import storage from '@react-native-firebase/storage'
 import { useNavigation } from '@react-navigation/native'
 import * as ImagePicker from 'expo-image-picker'
 import { LinearGradient } from 'expo-linear-gradient'
-import * as Location from 'expo-location'
 import { useContext, useEffect, useState } from 'react'
-import { ActivityIndicator, Dimensions, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native'
+import { ActivityIndicator, Alert, Dimensions, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import MapView, { Marker } from 'react-native-maps'
+import Toast from 'react-native-toast-message'
 import useColors from '../../../Utils/Colors'
+import getGeocoding from '../../../Utils/getGeocoding'
 import { NavigationContext } from '../../../Utils/NavBar'
 import { useAndroidBackHandler } from '../../../Utils/useAndroidCustomBackHandler'
-import { auth, db } from '../../../Firebase/init'
-import { addDoc, collection } from 'firebase/firestore'
 
+import { AppContext } from '../../../AppContext'
 import addImage from '../../../assets/images/addImage.png'
 
 const { width, height } = Dimensions.get('window')
 
-const CreateSpot = () => {
+const CreateSpot = ({ route }) => {
   const navigation = useNavigation()
   const Colors = useColors()
   const styles = DynamicStyles(Colors)
   const { setRoute } = useContext(NavigationContext)
+  const { fetchAndOrganizeSpotz, setMySpotz, userLocation } = useContext(AppContext)
+  
+  // Obtener la pantalla de origen desde los parámetros de navegación
+  const fromScreen = route?.params?.from || 'MySpotz'
 
   const [icon, setIcon] = useState(null)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [location, setLocation] = useState(null)
-  const [mapLoaded, setMapLoaded] = useState(false)
   const [images, setImages] = useState([])
-  const [loadingLocation, setLoadingLocation] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
 
   const navigateBack = () => {
-    navigation.navigate('MySpotz')
-    setRoute('MySpotz')
+    fetchAndOrganizeSpotz()
+    navigation.navigate(fromScreen)
+    setRoute(fromScreen)
     return true
   }
 
   useAndroidBackHandler(navigateBack)
 
   const handleCreateSpot = async () => {
-    // Validar que los campos requeridos estén completos
     if (!icon) {
-        Alert.alert('Error', 'Por favor selecciona un icono para el spot')
-        return
-      }
-      
-
+      Toast.show({ type: 'error', text1: 'Por favor selecciona un icono para el spot' });
+      return;
+    }
+  
     if (!name.trim()) {
-      Alert.alert('Error', 'Por favor ingresa un nombre para el spot')
-      return
+      Toast.show({ type: 'error', text1: 'Por favor ingresa un nombre para el spot' });
+      return;
     }
-    
+  
     if (!description.trim()) {
-      Alert.alert('Error', 'Por favor ingresa una descripción para el spot')
-      return
+      Toast.show({ type: 'error', text1: 'Por favor ingresa una descripción para el spot' });
+      return;
     }
-    
+  
     if (!location) {
-        Alert.alert('Error', 'Por favor selecciona una ubicación en el mapa')
-        return
+      Toast.show({ type: 'error', text1: 'Por favor selecciona una ubicación en el mapa' });
+      return;
     }
-
-    if (images.length < 1) {
-        Alert.alert('Error', 'Por favor selecciona al menos una imagen')
-        return
+  
+    if (!images || images.length < 1) {
+      Toast.show({ type: 'error', text1: 'Por favor selecciona al menos una imagen' });
+      return;
     }
-
-    if (!auth.currentUser) {
-        Alert.alert('Error', 'Tu sesión ha expirado. Por favor vuelve a iniciar sesión.')
-        return
+  
+    if (!auth().currentUser) {
+      Toast.show({ type: 'error', text1: 'Tu sesión ha expirado. Por favor vuelve a iniciar sesión.' });
+      return;
     }
-      
-
-    setIsCreating(true)
-
+  
+    setIsCreating(true);
+  
     try {
-      const spotData = {
+      const userId = auth().currentUser.uid;
+  
+      // 1. Crear el documento de spot sin imágenes ni icono
+      const tempSpot = {
         name: name.trim(),
         description: description.trim(),
-        icon: icon,
-        images: images,
+        icon: '', // Se actualizará después de subir
+        images: [],
         location: {
           latitude: location.latitude,
-          longitude: location.longitude
+          longitude: location.longitude,
+          name: await getGeocoding(location.latitude, location.longitude)
         },
-        userId: auth.currentUser.uid,
+        userId,
+        createdAt: new Date(),
+        likes: []
+      };
+  
+      const docRef = await firestore().collection('spotz').add(tempSpot);
+      const spotId = docRef.id;
+  
+      // 2. Subir el icono al Storage
+      let iconUrl = '';
+      let imageUrls = [];
+
+      // Subir icono e imágenes al mismo tiempo usando Promise.all
+      try {
+        const uploadIconPromise = (async () => {
+          try {
+            const response = await fetch(icon);
+            const blob = await response.blob();
+            const iconRef = storage().ref(`users/${userId}/spots/${spotId}/icon.jpg`);
+            await iconRef.put(blob);
+            return await iconRef.getDownloadURL();
+          } catch (iconError) {
+            console.warn('Error subiendo el icono:', iconError);
+            return '';
+          }
+        })();
+
+        const uploadImagesPromise = Promise.all(
+          images.map(async (image, index) => {
+            try {
+              const response = await fetch(image);
+              const blob = await response.blob();
+              const imageRef = storage().ref(`users/${userId}/spots/${spotId}/image_${index}.jpg`);
+              await imageRef.put(blob);
+              return await imageRef.getDownloadURL();
+            } catch (imgError) {
+              console.warn(`Error subiendo la imagen ${index}:`, imgError);
+              return null;
+            }
+          })
+        );
+
+        const [iconResult, imagesResult] = await Promise.all([uploadIconPromise, uploadImagesPromise]);
+        iconUrl = iconResult;
+        imageUrls = imagesResult.filter(Boolean); // Filtra nulos si alguna imagen falló
+      } catch (error) {
+        console.warn('Error subiendo icono o imágenes:', error);
       }
+  
+      // 4. Actualizar el documento con las URLs del icono y las imágenes
 
-      const docRef = await addDoc(collection(db, 'spotz'), spotData)
-      navigateBack()
+      await docRef.update({ 
+        icon: iconUrl,
+        images: imageUrls 
+      });
+      console.log("tempSpot", tempSpot)
+      console.log("imageUrls", imageUrls)
+      setMySpotz(prev => [...prev, { ...tempSpot, id: spotId, icon: iconUrl, images: imageUrls }])
+  
+
+  
+      Toast.show({
+        text1: "Spot creado con éxito",
+        type: "success"
+      });
+  
+      navigateBack();
     } catch (error) {
-      console.error('Error creating spot:', error)
-      Alert.alert('Error', 'No se pudo crear el spot. Inténtalo de nuevo.')
+      console.error('Error creating spot:', error);
+      Alert.alert('Error', 'No se pudo crear el spot. Inténtalo de nuevo.');
     } finally {
-      setIsCreating(false)
+      setIsCreating(false);
     }
-  }
-
+  };
+  
+  
   const handleSelectIcon = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images', 'videos'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    })
+    try {
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images', 'videos'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      })
 
-    if (!result.canceled) {
-      setIcon(result.assets[0].uri)
+      if (!result.canceled) {
+        setIcon(result.assets[0].uri)
+      }
+    } catch (error) {
+      console.error('Error selecting icon:', error);
     }
   }
 
@@ -133,35 +207,22 @@ const CreateSpot = () => {
   }
 
   useEffect(() => {
-    (async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync()
-        if (status !== 'granted') {
-          console.log('Permiso de ubicación denegado')
-          setLocation({
-            latitude: 37.78825,
-            longitude: -122.4324
-          })
-          setLoadingLocation(false)
-          return
-        }
+    // Usar la ubicación de AppContext si está disponible
+    if (userLocation && userLocation.latitude && userLocation.longitude) {
+      setLocation({
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude
+      })
+    } else {
+      // Fallback a ubicación por defecto si no hay ubicación del usuario
+      setLocation({
+        latitude: 37.78825,
+        longitude: -122.4324
+      })
+    }
+  }, [userLocation])
 
-        const userLocation = await Location.getCurrentPositionAsync({})
-        setLocation({
-          latitude: userLocation.coords.latitude,
-          longitude: userLocation.coords.longitude
-        })
-      } catch (error) {
-        console.log('Error obteniendo ubicación:', error)
-        setLocation({
-          latitude: 37.78825,
-          longitude: -122.4324
-        })
-      } finally {
-        setLoadingLocation(false)
-      }
-    })()
-  }, [])
+
 
   return (
     <ScrollView>
@@ -204,14 +265,13 @@ const CreateSpot = () => {
           <View style={{ width: "100%", marginTop: 15 }}>
             <Text style={styles.label2}>Seleccionar Ubicación</Text>
             <View style={{ height: 319, width: '100%', borderRadius: 10, overflow: 'hidden', marginTop: 10 }}>
-              {(loadingLocation || !location) && (
+              {!location ? (
                 <View style={styles.loadingMap}>
                   <ActivityIndicator size="large" color={Colors.mainGreen} />
                 </View>
-              )}
-              {location && (
+              ) : (
                 <MapView
-                  style={{ flex: 1, height:319 }}
+                  style={{ flex: 1, height: 319 }}
                   initialRegion={{
                     latitude: location.latitude,
                     longitude: location.longitude,
@@ -219,7 +279,8 @@ const CreateSpot = () => {
                     longitudeDelta: 0.005,
                   }}
                   onPress={handleMapPress}
-                  onMapReady={() => setMapLoaded(true)}
+                  loadingIndicatorColor={Colors.mainGreen}
+                  loadingBackgroundColor={Colors.background}
                 >
                   <Marker coordinate={location} />
                 </MapView>

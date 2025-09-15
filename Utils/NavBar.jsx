@@ -25,14 +25,14 @@ const NavBar = ({ children }) => {
 
   if (route !== 'Home' && route !== 'Mapa' && route !== 'Perfil' && route !== 'Spotz')  {
     return (
-      <NavigationContext.Provider value={{setRoute}}>
+      <NavigationContext.Provider value={{route, setRoute}}>
         {children}
       </NavigationContext.Provider>
     )
   }
 
   return (
-    <NavigationContext.Provider value={{ setRoute }}>
+    <NavigationContext.Provider value={{ route, setRoute }}>
       {children}
       <View style={styles.navbar}>
         <TouchableOpacity onPress={() => { setRoute('Spotz'); navigation.navigate("Spotz")}}>

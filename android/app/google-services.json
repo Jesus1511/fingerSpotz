@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "977479978130",
+    "project_id": "fingerspotz-c5a18",
+    "storage_bucket": "fingerspotz-c5a18.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:977479978130:android:371820062ab8f8ddec2a4b",
+        "android_client_info": {
+          "package_name": "com.jesus3.fingerspotz"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCm58AXJ1YNn5lALh3h07A8L9NDhyRKsWs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

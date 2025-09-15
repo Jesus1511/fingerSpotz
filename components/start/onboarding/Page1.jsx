@@ -1,9 +1,11 @@
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useContext, useEffect } from 'react';
 import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const { height, width } = Dimensions.get('window');
 
+import { AppContext } from '../../../AppContext';
 import page1Image from '../../../assets/images/page1.jpeg';
 import useColors from '../../../Utils/Colors';
 
@@ -11,7 +13,14 @@ const Page1 = () => {
 
     const navigation = useNavigation();
     const Colors = useColors();
+
     const styles = DynamicStyles(Colors)
+
+
+
+    const handleNext = () => {
+        navigation.navigate("OnboardingPage2");
+    };
 
   return (
     <View>
@@ -32,9 +41,7 @@ const Page1 = () => {
         </View>
 
 
-        <TouchableOpacity onPress={() => {
-            navigation.navigate("OnboardingPage2");
-        }} style={styles.button}>
+        <TouchableOpacity onPress={handleNext} style={styles.button}>
             <LinearGradient
               colors={["#ffffff60", "transparent"]}
               start={{ x: 0.5, y: 0 }}

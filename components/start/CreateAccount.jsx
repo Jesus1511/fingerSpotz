@@ -2,8 +2,7 @@ import { useNavigation } from '@react-navigation/native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Dimensions, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import useColors from '../../Utils/Colors'
-import { auth } from '../../Firebase/init'
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
+import auth from '@react-native-firebase/auth';
 import { useContext, useState } from 'react'
 
 const { width, height } = Dimensions.get('window')
@@ -35,10 +34,10 @@ const handleRegister = async () => {
   }
 
   try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const userCredential = await auth().createUserWithEmailAndPassword(email, password);
 
     // Actualiza el perfil con el nombre del usuario
-    await updateProfile(userCredential.user, {
+    await userCredential.user.updateProfile({
       displayName: name,
     });
 
@@ -81,7 +80,7 @@ const handleRegister = async () => {
           <View>
             <Text style={{color:Colors.text, backgroundColor:Colors.background, padding:5, position:"relative", top:15, fontSize:16, fontWeight:"medium", left:15, zIndex:10, width:80, textAlign:"center"}}>Usuario</Text>
             <TextInput
-              placeholder='Pedro'
+              placeholder='Nombre de usuario'
               style={styles.input}
               onChangeText={(text) => setName(text)}
               value={name}
@@ -92,12 +91,12 @@ const handleRegister = async () => {
           <View>
             <Text style={{color:Colors.text, backgroundColor:Colors.background, padding:5, position:"relative", top:15, fontSize:16, fontWeight:"medium", left:15, zIndex:10, width:60, textAlign:"center"}}>Correo</Text>
             <TextInput
-              placeholder='pedro@gmail.com'
+              placeholder='usuario@gmail.com'
               style={styles.input}
               onChangeText={(text) => setEmail(text)}
               value={email}
               placeholderTextColor={Colors.placeholder}
-              />
+              />  
           </View>
 
           <View>

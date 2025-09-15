@@ -1,26 +1,17 @@
-import { initializeApp } from "firebase/app";
-import { getReactNativePersistence, initializeAuth } from "firebase/auth";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getFirestore } from "firebase/firestore";
+import analytics from '@react-native-firebase/analytics';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
+import storage from '@react-native-firebase/storage';
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCm58AXJ1YNn5lALh3h07A8L9NDhyRKsWs",
-  authDomain: "fingerspotz-c5a18.firebaseapp.com",
-  projectId: "fingerspotz-c5a18",
-  storageBucket: "fingerspotz-c5a18.appspot.com",
-  messagingSenderId: "977479978130",
-  appId: "1:977479978130:android:371820062ab8f8ddec2a4b",
-};
+// React Native Firebase doesn't need explicit initialization with config
+// It automatically uses the google-services.json (Android) and GoogleService-Info.plist (iOS) files
 
-// Inicializa Firebase
-const app = initializeApp(firebaseConfig);
+// Habilitar Analytics
+analytics().setAnalyticsCollectionEnabled(true);
 
-// Inicializa Auth con AsyncStorage como persistencia
-const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage),
-});
+// Verificar que Analytics esté funcionando
+analytics().setUserId('test_user');
+console.log('🔥 Firebase Analytics inicializado correctamente');
 
-// Inicializa Firestore
-const db = getFirestore(app);
+export { analytics, auth, firestore as db, storage };
 
-export { auth, db };

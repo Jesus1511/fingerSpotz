@@ -1,18 +1,22 @@
-import { NavigationContainer, NavigationIndependentTree } from '@react-navigation/native'
-import { createNativeStackNavigator } from '@react-navigation/native-stack'
-import { AppContext } from './AppContext'
+import { NavigationContainer, NavigationIndependentTree } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useContext } from 'react';
+import { AppContext } from './AppContext';
+
 import NavBar from './Utils/NavBar';
+import TimeTracker from './Utils/TimeTracker';
 
-import Mapa from './components/content/Mapa'
-import Perfil from './components/content/Perfil';
-import Spotz from './components/content/Spotz'
-import MySpotz from './components/content/mySpotz/MySpotz'
-import CreateSpot from './components/content/mySpotz/CreateSpot'
+import Favorites from './components/content/Favorites';
+import Mapa from './components/content/Mapa';
+import CreateSpot from './components/content/mySpotz/CreateSpot';
 import EditSpot from './components/content/mySpotz/EditSpot';
+import MySpotz from './components/content/mySpotz/MySpotz';
+import Perfil from './components/content/Perfil';
+import SpotDetails from './components/content/SpotDetails';
+import Spotz from './components/content/Spotz';
 
-import Login from './components/start/Login';
 import CreateAccount from './components/start/CreateAccount';
+import Login from './components/start/Login';
 
 import Page1 from './components/start/onboarding/Page1';
 import Page2 from './components/start/onboarding/Page2';
@@ -28,6 +32,7 @@ const Navigation = () => {
     <NavigationIndependentTree>
       <NavigationContainer independent={true}>
           <NavBar>
+            <TimeTracker>
             <Stack.Navigator
                 screenOptions={{ headerShown: false }}
                 initialRouteName={initialRoute}
@@ -36,6 +41,8 @@ const Navigation = () => {
               <Stack.Screen name="Mapa" component={Mapa} />
               <Stack.Screen name="Perfil" component={Perfil} />
               <Stack.Screen name="Spotz" component={Spotz} />
+              <Stack.Screen name="Favorites" component={Favorites} />
+              <Stack.Screen name="SpotDetails" component={SpotDetails} />
               <Stack.Screen name="Login" component={Login} />
               <Stack.Screen name="CreateAccount" component={CreateAccount} />
 
@@ -70,6 +77,7 @@ const Navigation = () => {
               )}
 
             </Stack.Navigator>
+            </TimeTracker>
           </NavBar>
       </NavigationContainer>
     </NavigationIndependentTree>

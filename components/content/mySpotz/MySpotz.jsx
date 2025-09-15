@@ -1,14 +1,14 @@
-import { AntDesign, Entypo } from '@expo/vector-icons'
-import { useNavigation } from '@react-navigation/native'
-import * as Location from 'expo-location'
-import { collection, getDocs, query, where } from 'firebase/firestore'
-import { useContext, useEffect, useState } from 'react'
-import { ActivityIndicator, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { auth, db } from '../../../Firebase/init'
-import useColors from '../../../Utils/Colors'
-import { NavigationContext } from '../../../Utils/NavBar'
-import { useAndroidBackHandler } from '../../../Utils/useAndroidCustomBackHandler'
-import { AppContext } from '../../../AppContext'
+import { AntDesign, Entypo } from '@expo/vector-icons';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
+import { useNavigation } from '@react-navigation/native';
+import * as Location from 'expo-location';
+import { useContext, useEffect } from 'react';
+import { ActivityIndicator, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AppContext } from '../../../AppContext';
+import useColors from '../../../Utils/Colors';
+import { NavigationContext } from '../../../Utils/NavBar';
+import { useAndroidBackHandler } from '../../../Utils/useAndroidCustomBackHandler';
 
 const {width, height} = Dimensions.get("window")
 
@@ -19,8 +19,6 @@ const P = () => {
   const styles = DynamicStyles(Colors)
   const {setRoute} = useContext(NavigationContext)
   const {mySpotz: spotz, setMySpotz: setSpotz} = useContext(AppContext)
-
-  const [userLocation, setUserLocation] = useState(null)
 
   const navigateBack = () => {
     navigation.navigate('Perfil')
@@ -49,7 +47,7 @@ const P = () => {
     if (distance < 1) {
       return `${Math.round(distance * 1000)}m`
     } else {
-      return `${distance.toFixed(1)}km`
+      return `${distance?.toFixed(1)}km`
     }
   }
 
@@ -75,7 +73,7 @@ const P = () => {
 
   // Cargar spots del usuario
   const loadUserSpotz = async () => {
-    if (!auth.currentUser) {
+    if (!auth().currentUser) {
       return
     }
 
@@ -83,12 +81,11 @@ const P = () => {
       
       // Obtener ubicación actual
       const location = await getUserLocation()
-      setUserLocation(location)
-
       // Consultar spots del usuario en Firebase
-      const spotzRef = collection(db, 'spotz')
-      const q = query(spotzRef, where('userId', '==', auth.currentUser.uid))
-      const querySnapshot = await getDocs(q)
+      const querySnapshot = await firestore()
+        .collection('spotz')
+        .where('userId', '==', auth().currentUser.uid)
+        .get()
       
       const userSpotz = []
       querySnapshot.forEach((doc) => {
@@ -126,7 +123,7 @@ const P = () => {
   return (
     <ScrollView>
     <View style={{backgroundColor:Colors.background, height, paddingHorizontal:15, paddingVertical:25, alignItems:"center"}}>
-        <View style={{ marginBottom: 15, width:"100%" }}>
+        <View style={{ marginBottom: 15, width:"100%", flexDirection:"row", alignItems:"center" }}>
           <TouchableOpacity onPress={() => navigateBack()}>
             <AntDesign name="arrowleft" size={28} color={Colors.text} />
           </TouchableOpacity>
@@ -151,7 +148,7 @@ const P = () => {
                                 <Text style={styles.spotName}>{spot.name}</Text>
                                 {spot.distance !== null && (
                                     <Text style={styles.spotDistance}>
-                                        a <Text style={{color:Colors.mainGreen}}>{formatDistance(spot.distance)}</Text> de ti
+                                        a <Text style={{color:Colors.mainGreen}}>{formatDistance(spot?.distance)}</Text> de ti
                                     </Text>
                                 )}
                             </View>
@@ -164,7 +161,7 @@ const P = () => {
                     <Text style={styles.emptySubtext}>Crea tu primer spot tocando el botón +</Text>
                 </View>
             )}
-            <TouchableOpacity onPress={() => navigation.navigate('CreateSpot')} style={styles.addButton}>
+            <TouchableOpacity onPress={() => navigation.navigate('CreateSpot', { from: 'MySpotz' })} style={styles.addButton}>
                 <Entypo name="plus" size={30} color="black" />
             </TouchableOpacity>
         </View>
@@ -264,7 +261,7 @@ const DynamicStyles = (Colors) => StyleSheet.create({
   },
 
   spotDistance: {
-    color: Colors.text,
+    color: Colors.ligthText,
     fontSize: 14,
     fontFamily: 'Inter-Medium'
   },

@@ -1,18 +1,21 @@
-import { AntDesign } from '@expo/vector-icons'
-import { useNavigation } from '@react-navigation/native'
-import * as ImagePicker from 'expo-image-picker'
-import { LinearGradient } from 'expo-linear-gradient'
-import { doc, updateDoc } from 'firebase/firestore'
-import { useContext, useState } from 'react'
-import { ActivityIndicator, Alert, Dimensions, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
-import MapView, { Marker } from 'react-native-maps'
-import { auth, db } from '../../../Firebase/init'
-import useColors from '../../../Utils/Colors'
-import { NavigationContext } from '../../../Utils/NavBar'
-import { useAndroidBackHandler } from '../../../Utils/useAndroidCustomBackHandler'
-
-import addImage from '../../../assets/images/addImage.png'
-
+import { AntDesign } from '@expo/vector-icons';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
+import storage from '@react-native-firebase/storage';
+import { useNavigation } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useContext, useState } from 'react';
+import { ActivityIndicator, Alert, Dimensions, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
+import Toast from 'react-native-toast-message';
+import { AppContext } from '../../../AppContext';
+import addImage from '../../../assets/images/addImage.png';
+import useColors from '../../../Utils/Colors';
+import getGeocoding from '../../../Utils/getGeocoding';
+import { NavigationContext } from '../../../Utils/NavBar';
+import { useAndroidBackHandler } from '../../../Utils/useAndroidCustomBackHandler';
+  
 const { width, height } = Dimensions.get('window')
 
 const EditSpot = ({route}) => {
@@ -20,9 +23,11 @@ const EditSpot = ({route}) => {
   const Colors = useColors()
   const styles = DynamicStyles(Colors)
   const { setRoute } = useContext(NavigationContext)
-
+  const { mySpotz, setMySpotz, fetchAndOrganizeSpotz } = useContext(AppContext)
   const { spot } = route.params || {}
 
+  console.log("spot completo:", spot)
+  console.log("spot.id:", spot?.id)
   const [icon, setIcon] = useState(spot.icon)
   const [name, setName] = useState(spot.name)
   const [description, setDescription] = useState(spot.description)
@@ -31,7 +36,8 @@ const EditSpot = ({route}) => {
   const [isUpdating, setIsUpdating] = useState(false)
 
   const navigateBack = () => {
-    navigation.navigate('MySpotz')
+    fetchAndOrganizeSpotz()
+    navigation.goBack()
     setRoute('MySpotz')
     return true
   }
@@ -65,7 +71,7 @@ const EditSpot = ({route}) => {
         return
     }
 
-    if (!auth.currentUser) {
+    if (!auth().currentUser) {
         Alert.alert('Error', 'Tu sesión ha expirado. Por favor vuelve a iniciar sesión.')
         return
     }
@@ -73,20 +79,49 @@ const EditSpot = ({route}) => {
     setIsUpdating(true)
 
     try {
+      const userId = auth().currentUser.uid
+      let locationName = spot.location.name
+      // Solo pedir geocoding si la lat o long cambiaron
+      if (
+        location.latitude !== spot.location.latitude ||
+        location.longitude !== spot.location.longitude
+      ) {
+        locationName = await getGeocoding(location.latitude, location.longitude)
+      }
+
+      // Verificar si el icono cambió (si no es una URL HTTPS, significa que es nuevo)
+      let iconUrl = icon
+      if (!icon.startsWith('https://')) {
+        try {
+          const response = await fetch(icon)
+          const blob = await response.blob()
+          const iconRef = storage().ref(`users/${userId}/spots/${spot.id}/icon.jpg`)
+          await iconRef.put(blob)
+          iconUrl = await iconRef.getDownloadURL()
+        } catch (iconError) {
+          console.warn('Error subiendo el icono:', iconError)
+        }
+      }
+
       const spotData = {
         name: name.trim(),
         description: description.trim(),
-        icon: icon,
+        icon: iconUrl,
         images: images,
         location: {
           latitude: location.latitude,
-          longitude: location.longitude
+          longitude: location.longitude,
+          name: locationName
         },
         updatedAt: new Date(),
       }
 
-      await updateDoc(doc(db, 'spotz', spot.id), spotData)
-      Alert.alert('Éxito', 'Spot actualizado correctamente')
+      await firestore().collection('spotz').doc(spot.id).update(spotData)
+      setMySpotz(prev => prev.map(s => s.id === spot.id ? {...s, ...spotData} : s))
+      Toast.show({
+        text1: "Spot actualizado correctamente",
+        type: "success"
+      })
       navigateBack()
     } catch (error) {
       console.error('Error updating spot:', error)
@@ -94,6 +129,103 @@ const EditSpot = ({route}) => {
     } finally {
       setIsUpdating(false)
     }
+  }
+
+  const handleDeleteSpot = async () => {
+    Alert.alert(
+      'Eliminar Spot',
+      '¿Estás seguro de que quieres eliminar este spot? Esta acción no se puede deshacer.',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            if (!auth().currentUser) {
+              Alert.alert('Error', 'Tu sesión ha expirado. Por favor vuelve a iniciar sesión.')
+              return
+            }
+            setIsUpdating(true)
+
+            try {
+              const userId = auth().currentUser.uid
+              console.log('Eliminando spot con ID:', spot.id)
+              console.log('Usuario ID:', userId)
+              
+              // 1. Eliminar toda la carpeta del spot del Storage
+              const spotFolderRef = storage().ref(`users/${userId}/spots/${spot.id}`)
+              
+              try {
+                const listResult = await spotFolderRef.listAll()
+                
+                // Eliminar todos los archivos en la carpeta del spot
+                const fileDeletePromises = listResult.items.map(fileRef => 
+                  fileRef.delete().catch((error) => {
+                    if (error.code !== 'storage/object-not-found') {
+                      console.warn(`Error eliminando archivo ${fileRef.fullPath}:`, error)
+                    }
+                  })
+                )
+                
+                // Eliminar todas las subcarpetas si las hay
+                const folderDeletePromises = listResult.prefixes.map(folderRef => 
+                  deleteFolderRecursively(folderRef)
+                )
+                
+                await Promise.allSettled([...fileDeletePromises, ...folderDeletePromises])
+              } catch (storageError) {
+                console.warn('Error eliminando carpeta del spot:', storageError)
+              }
+              
+              // 2. Eliminar documento de Firestore
+              console.log('Eliminando documento de Firestore...')
+              console.log('ID del documento a eliminar:', spot.id)
+              
+              // Verificar que el documento existe antes de eliminarlo
+              const docRef = firestore().collection('spotz').doc(spot.id)
+              const docSnapshot = await docRef.get()
+              
+              if (docSnapshot.exists) {
+                console.log('Documento encontrado, procediendo a eliminar...')
+                
+                // Usar batch para una eliminación más robusta
+                const batch = firestore().batch()
+                batch.delete(docRef)
+                await batch.commit()
+                
+                console.log('Documento eliminado exitosamente de Firestore usando batch')
+                
+                // Esperar un momento para que la eliminación se propague
+                await new Promise(resolve => setTimeout(resolve, 2000))
+                
+
+              } else {
+                console.log('Documento no encontrado en Firestore')
+                Alert.alert('Error', 'El spot no se encontró en la base de datos')
+                return
+              }
+              
+              Toast.show({ 
+                type: 'success',
+                text1: 'Spot eliminado correctamente'
+              })
+              const newMySpotz = mySpotz.filter(s => s.id !== spot.id)
+              setMySpotz(newMySpotz)
+              console.log("newMySpotz", newMySpotz)
+              navigateBack()
+            } catch (error) {
+              console.error('Error deleting spot:', error)
+              Alert.alert('Error', 'No se pudo eliminar el spot. Inténtalo de nuevo.')
+            } finally {
+              setIsUpdating(false)
+            }
+          },
+        },
+      ]
+    )
   }
 
   const handleSelectIcon = async () => {
@@ -106,6 +238,31 @@ const EditSpot = ({route}) => {
 
     if (!result.canceled) {
       setIcon(result.assets[0].uri)
+    }
+  }
+
+  // Función auxiliar para eliminar carpetas recursivamente
+  const deleteFolderRecursively = async (folderRef) => {
+    try {
+      const listResult = await folderRef.listAll()
+      
+      // Eliminar todos los archivos en esta carpeta
+      const fileDeletePromises = listResult.items.map(fileRef => 
+        fileRef.delete().catch((error) => {
+          if (error.code !== 'storage/object-not-found') {
+            console.warn(`Error eliminando archivo ${fileRef.fullPath}:`, error)
+          }
+        })
+      )
+      
+      // Eliminar todas las subcarpetas recursivamente
+      const folderDeletePromises = listResult.prefixes.map(subFolderRef => 
+        deleteFolderRecursively(subFolderRef)
+      )
+      
+      await Promise.allSettled([...fileDeletePromises, ...folderDeletePromises])
+    } catch (error) {
+      console.warn(`Error eliminando carpeta ${folderRef.fullPath}:`, error)
     }
   }
 
@@ -133,11 +290,14 @@ const EditSpot = ({route}) => {
   return (
     <ScrollView>
       <View style={{ backgroundColor: Colors.background, minHeight: height, paddingHorizontal: 15, paddingVertical: 25, alignItems: "center" }}>
-        <View style={{ marginBottom: 15, width: "100%", flexDirection: 'row', }}>
+        <View style={{ marginBottom: 15, width: "100%", flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <TouchableOpacity onPress={() => navigateBack()}>
             <AntDesign name="arrowleft" size={28} color={Colors.text} />
           </TouchableOpacity>
           <Text style={styles.title}>Editar Spot</Text>
+          <TouchableOpacity onPress={handleDeleteSpot} disabled={isUpdating}>
+            <AntDesign name="delete" size={28} color={isUpdating ? Colors.placeholder : "#FF4444"} />
+          </TouchableOpacity>
         </View>
 
         <View style={{ width: "100%", alignItems: 'center', marginTop: 20 }}>
@@ -171,14 +331,13 @@ const EditSpot = ({route}) => {
           <View style={{ width: "100%", marginTop: 15 }}>
             <Text style={styles.label2}>Seleccionar Ubicación</Text>
             <View style={{ height: 319, width: '100%', borderRadius: 10, overflow: 'hidden', marginTop: 10 }}>
-              {(!location) && (
+              {!location ? (
                 <View style={styles.loadingMap}>
                   <ActivityIndicator size="large" color={Colors.mainGreen} />
                 </View>
-              )}
-              {location && (
+              ) : (
                 <MapView
-                  style={{ flex: 1, height:319 }}
+                  style={{ flex: 1, height: 319 }}
                   initialRegion={{
                     latitude: location.latitude,
                     longitude: location.longitude,
@@ -186,6 +345,8 @@ const EditSpot = ({route}) => {
                     longitudeDelta: 0.005,
                   }}
                   onPress={handleMapPress}
+                  loadingIndicatorColor={Colors.mainGreen}
+                  loadingBackgroundColor={Colors.background}
                 >
                   <Marker coordinate={location} />
                 </MapView>

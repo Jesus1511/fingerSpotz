@@ -1,20 +1,21 @@
-import { useNavigation } from '@react-navigation/native'
-import { LinearGradient } from 'expo-linear-gradient'
-import { Dimensions, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
-import { useContext, useEffect, useState } from 'react'
-import { signInWithEmailAndPassword, updateProfile } from 'firebase/auth'
-import { auth } from '../../Firebase/init' // asegúrate que esta ruta sea correcta
-import Toast from 'react-native-toast-message'
-import useColors from '../../Utils/Colors'
+import auth from '@react-native-firebase/auth';
+import { useNavigation } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useContext, useEffect, useState } from 'react';
+import { Dimensions, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+import Toast from 'react-native-toast-message';
+import image from '../../assets/images/createAccount.webp';
+import useColors from '../../Utils/Colors';
+import { NavigationContext } from '../../Utils/NavBar';
 
 const { width, height } = Dimensions.get('window')
-import image from '../../assets/images/createAccount.webp'
-import { NavigationContext } from '../../Utils/NavBar'
 
 const Login = () => {
   const navigation = useNavigation();
   const Colors = useColors()
   const styles = DynamicStyles(Colors)
+
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,19 +33,13 @@ const Login = () => {
     }
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-
-      Toast.show({
-        text1: "Sesión iniciada",
-        text2: "¡Bienvenido de nuevo!",
-        type: "success",
-        visibilityTime: 2000
-      });
+      await auth().signInWithEmailAndPassword(email, password);
 
       navigation.navigate('Mapa');
       setRoute('Mapa')
     } catch (error) {
       console.error('Error al iniciar sesión:', error.message);
+      
       Toast.show({
         text1: "Error de inicio de sesión",
         text2: error.message,
@@ -53,7 +48,20 @@ const Login = () => {
       });
     }
   };
+
+  const handleCreateAccount = () => {
+    navigation.navigate("CreateAccount");
+  };
   
+  useEffect(() => {
+    const unsubscribe = auth().onAuthStateChanged((user) => {
+      if (user) {
+        navigation.navigate('Mapa');
+        setRoute('Mapa')
+      }
+    })
+    return () => unsubscribe()
+  }, [])  
 
   return (
     <View style={{ backgroundColor: Colors.background, flex: 1, paddingHorizontal: 15, paddingVertical: 25, alignItems: "center" }}>
@@ -101,9 +109,7 @@ const Login = () => {
           <Text style={styles.buttonText}>Iniciar Sesión</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => {
-          navigation.navigate("CreateAccount");
-        }}>
+        <TouchableOpacity onPress={handleCreateAccount}>
           <Text style={styles.buttonCreateAccount}>Crear una cuenta</Text>
         </TouchableOpacity>
       </View>
@@ -142,13 +148,13 @@ const DynamicStyles = (Colors) => StyleSheet.create({
       marginBottom:20
   },
   imageGradient: {
-        position: 'absolute',
-        top: 20,
-        right: 0,
-      borderBottomLeftRadius:10,
-        borderRadius:40,
-        width:width * 0.918,
-        height:height * 0.391,
+    position: 'absolute',
+    top: 20,
+    right: 0,
+    borderBottomLeftRadius:10,
+    borderRadius:40,
+    width:width * 0.918,
+    height:height * 0.391,
   },
   imageText: {
       position: 'absolute',

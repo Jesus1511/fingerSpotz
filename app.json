@@ -14,14 +14,26 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icon.png",
+        "foregroundImage": "./assets/images/androidIcon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "splash": {
+        "image": "./assets/images/androidIcon.png",
+        "imageWidth": 200,
+        "resizeMode": "contain",
         "backgroundColor": "#ffffff"
       },
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyDRAp7QZDTBKBxzY0ZpE4ksrGtuQ6fEjdU"
+        },
+        "googleServices": {
+          "analytics": {
+            "enabled": true
+          }
         }
       },
+      "googleServicesFile": "./google-services.json",
       "package": "com.jesus3.fingerspotz",
       "edgeToEdgeEnabled": true
     },
@@ -46,7 +58,14 @@
         {
           "photosPermission": "FingerSpotz necesita acceso a tu galería para que puedas publicar imágenes con el resto de los usuarios."
         }
-      ]
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "FingerSpotz necesita acceso a tu ubicación para que puedas ver los spotz cercanos."
+        }
+      ],
+      "@react-native-firebase/app"
     ],
     "experiments": {
       "typedRoutes": true
