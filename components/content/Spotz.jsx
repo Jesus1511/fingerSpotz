@@ -60,7 +60,7 @@ const P = () => {
 
   return (
     <ScrollView>
-      <View style={{backgroundColor:Colors.background, height, paddingHorizontal:15, paddingVertical:25, alignItems:"center"}}>
+      <View style={{backgroundColor:Colors.background, minHeight:height+100, paddingHorizontal:15, paddingVertical:25, alignItems:"center"}}>
           {searching ? (
             <View style={{ width:"100%", flexDirection:'row', justifyContent:"space-between", padding:10, alignItems:"center"}}>
               <TextInput

@@ -79,8 +79,9 @@ const Login = () => {
         <View>
           <Text style={[styles.label, {width:70}]}>Email</Text>
           <TextInput
-            placeholder='pedro@gmail.com'
+            placeholder='ejemplo@gmail.com'
             style={styles.input}
+            keyboardType='email-address'
             placeholderTextColor={Colors.placeholder}
             value={email}
             onChangeText={setEmail}
@@ -91,7 +92,7 @@ const Login = () => {
           <Text style={styles.label}>Contraseña</Text>
           <TextInput
             secureTextEntry={true}
-            placeholder='password'
+            placeholder='********'
             placeholderTextColor={Colors.placeholder}
             style={styles.input}
             value={password}

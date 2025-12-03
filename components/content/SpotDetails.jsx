@@ -558,7 +558,8 @@ const DynamicStyles = (Colors) => StyleSheet.create({
     padding: 10,
     borderRadius: 10,
     width: width * 0.9,
-    height: height * 0.1,
+    minHeight: height * 0.1,
+    paddingVertical: 15
   },
   commentText: {
     color: Colors.text,
